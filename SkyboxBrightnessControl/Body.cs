@@ -5,7 +5,8 @@ namespace SkyboxBrightnessControl;
 public class Body
 {
     public CelestialBody celestialBody { get; }
-    public Camera camera { get; }
+    public Camera primaryCamera { get; }
+    public PlanetariumCamera secondaryCamera { get; }
     public float effectiveRadius { get; }
 
     public float weightBody { get; protected set; }
@@ -13,21 +14,40 @@ public class Body
     public float angleBody { get; protected set; }
     public float angularRadiusBody { get; protected set; }
 
-    public Body(CelestialBody inputBody, Camera inputCamera)
+    public Body(CelestialBody inputBody, Camera inputPrimaryCamera, PlanetariumCamera inputSecondaryCamera)
     {
         celestialBody = inputBody;
-        camera = inputCamera;
+        primaryCamera = inputPrimaryCamera;
+        secondaryCamera = inputSecondaryCamera;
         effectiveRadius = (float)celestialBody.Radius + (celestialBody.atmosphere ? (float)celestialBody.atmosphereDepth : 0);
         updateStats();
     }
 
     public void updateStats()
     {
-        var relativePositionBody =  (Vector3)celestialBody.position - camera.transform.position;
-        var modifiedFOV = camera.fieldOfView * camera.aspect / 2;
+        Vector3 cameraPosition;
+        Vector3 cameraAim;
+        float cameraAspectRatio;
+        float cameraFOV;
+        if (MapView.MapIsEnabled)
+        {
+            cameraPosition = secondaryCamera.transform.position;
+            cameraAim = secondaryCamera.transform.forward;
+            cameraAspectRatio = 1.78f;
+            cameraFOV = 60f;
+        }
+        else
+        {
+            cameraPosition = primaryCamera.transform.position;
+            cameraAim = primaryCamera.transform.forward;
+            cameraAspectRatio = primaryCamera.aspect;
+            cameraFOV = primaryCamera.fieldOfView;
+        }
+        var relativePositionBody =  (Vector3)celestialBody.position - cameraPosition;
+        var modifiedFOV = cameraFOV * cameraAspectRatio / 2;
         distanceBody = relativePositionBody.magnitude;
         angularRadiusBody = Mathf.Asin(effectiveRadius / distanceBody) * Mathf.Rad2Deg;
-        angleBody = Vector3.Angle(relativePositionBody, camera.transform.forward);
+        angleBody = Vector3.Angle(relativePositionBody, cameraAim);
 
         if (angleBody - angularRadiusBody > modifiedFOV) weightBody = 0;
         else if (angularRadiusBody > 1)

@@ -7,14 +7,15 @@ namespace SkyboxBrightnessControl;
 [KSPAddon(KSPAddon.Startup.AllGameScenes, false)]
 public class SkyboxBrightnessControl : MonoBehaviour
 {
-    public static SkyboxBrightnessControl Instance;
+    public static SkyboxBrightnessControl Instance { get; protected set; }
     protected GalaxyCubeControl Sky;
 
     protected bool hasStarted;
     protected short startAttempts;
 
     protected List<Body> allBodies;
-    protected Camera mainCamera;
+    protected Camera primaryCamera;
+    protected PlanetariumCamera secondaryCamera;
 
     protected Task WeightCalculations;
     protected short calculationRetries;
@@ -49,7 +50,8 @@ public class SkyboxBrightnessControl : MonoBehaviour
         }
 
         Sky = GalaxyCubeControl.Instance;
-        mainCamera = FlightCamera.fetch.mainCamera;
+        primaryCamera = FlightCamera.fetch.mainCamera;
+        secondaryCamera = MapView.MapCamera;
 
         // Disable stock sun fading
         Sky.glareFadeLimit = 0f;
@@ -98,7 +100,8 @@ public class SkyboxBrightnessControl : MonoBehaviour
             Sky.maxGalaxyColor = Color.white;
             Sky = null;
         }
-        if (mainCamera) mainCamera = null;
+        if (primaryCamera) primaryCamera = null;
+        if (secondaryCamera) secondaryCamera = null;
         allBodies = null;
         Instance = null;
     }
@@ -164,7 +167,7 @@ public class SkyboxBrightnessControl : MonoBehaviour
         {
             foreach (var celestialBody in FlightGlobals.Bodies)
             {
-                allBodies.Add(new Body(celestialBody, mainCamera));
+                allBodies.Add(new Body(celestialBody, primaryCamera, secondaryCamera));
             }
         }
         else
