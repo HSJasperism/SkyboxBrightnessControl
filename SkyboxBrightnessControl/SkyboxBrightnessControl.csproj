@@ -1,0 +1,68 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <AppDesignerFolder>Properties</AppDesignerFolder>
+        <RootNamespace>SkyboxBrightnessControl</RootNamespace>
+        <AssemblyName>SkyboxBrightnessControl</AssemblyName>
+
+        <TargetFramework>net481</TargetFramework>
+        <LangVersion>9</LangVersion>
+        <FileAlignment>512</FileAlignment>
+
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+
+        <KSPDEVDIR>$(HOME)/.local/share/Steam/steamapps/common/Kerbal Space Program</KSPDEVDIR>
+        <OutputPath>$(KSPDEVDIR)/GameData/z-KSP-Custom-Patches</OutputPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>full</DebugType>
+        <Optimize>false</Optimize>
+        <DefineConstants>
+            TRACE;DEBUG;ENABLE_PROFILER
+        </DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+        <LangVersion>default</LangVersion>
+        <Prefer32Bit>false</Prefer32Bit>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+        <DebugSymbols>false</DebugSymbols>
+        <DebugType>none</DebugType>
+        <Optimize>true</Optimize>
+        <DefineConstants>
+        </DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+        <LangVersion>default</LangVersion>
+        <Prefer32Bit>false</Prefer32Bit>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Reference Include="Assembly-CSharp">
+            <HintPath Condition="Exists('$(KSPDEVDIR)/KSP_x64_Data/Managed/Assembly-CSharp.dll')">$(KSPDEVDIR)/KSP_x64_Data/Managed/Assembly-CSharp.dll</HintPath>
+            <HintPath Condition="!Exists('$(KSPDEVDIR)/KSP_x64_Data/Managed/Assembly-CSharp.dll')">Assembly-CSharp.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Assembly-CSharp-firstpass">
+            <HintPath Condition="Exists('$(KSPDEVDIR)/KSP_x64_Data/Managed/Assembly-CSharp-firstpass.dll')">$(KSPDEVDIR)/KSP_x64_Data/Managed/Assembly-CSharp-firstpass.dll</HintPath>
+            <HintPath Condition="!Exists('$(KSPDEVDIR)/KSP_x64_Data/Managed/Assembly-CSharp-firstpass.dll')">Assembly-CSharp-firstpass.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine">
+            <HintPath Condition="Exists('$(KSPDEVDIR)/KSP_x64_Data/Managed/UnityEngine.dll')">$(KSPDEVDIR)/KSP_x64_Data/Managed/UnityEngine.dll</HintPath>
+            <HintPath Condition="!Exists('$(KSPDEVDIR)/KSP_x64_Data/Managed/UnityEngine.dll')">UnityEngine.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.CoreModule">
+            <HintPath Condition="Exists('$(KSPDEVDIR)/KSP_x64_Data/Managed/UnityEngine.CoreModule.dll')">$(KSPDEVDIR)/KSP_x64_Data/Managed/UnityEngine.CoreModule.dll</HintPath>
+            <HintPath Condition="!Exists('$(KSPDEVDIR)/KSP_x64_Data/Managed/UnityEngine.CoreModule.dll')">UnityEngine.CoreModule.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+    </ItemGroup>
+
+</Project>
