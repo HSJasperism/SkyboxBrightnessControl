@@ -63,6 +63,11 @@
             <HintPath Condition="!Exists('$(KSPDEVDIR)/KSP_x64_Data/Managed/UnityEngine.CoreModule.dll')">UnityEngine.CoreModule.dll</HintPath>
             <Private>False</Private>
         </Reference>
+        <Reference Include="UnityEngine.PhysicsModule">
+            <HintPath Condition="Exists('$(KSPDEVDIR)/KSP_x64_Data/Managed/UnityEngine.CoreModule.dll')">$(KSPDEVDIR)/KSP_x64_Data/Managed/UnityEngine.PhysicsModule.dll</HintPath>
+            <HintPath Condition="!Exists('$(KSPDEVDIR)/KSP_x64_Data/Managed/UnityEngine.CoreModule.dll')">UnityEngine.PhysicsModule.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
     </ItemGroup>
 
 </Project>
