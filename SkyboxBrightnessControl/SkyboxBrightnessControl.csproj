@@ -14,7 +14,7 @@
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 
         <KSPDEVDIR>$(HOME)/.local/share/Steam/steamapps/common/Kerbal Space Program</KSPDEVDIR>
-        <OutputPath>$(KSPDEVDIR)/GameData/z-KSP-Custom-Patches</OutputPath>
+        <OutputPath>$(KSPDEVDIR)/GameData/SkyboxBrightnessControl</OutputPath>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
