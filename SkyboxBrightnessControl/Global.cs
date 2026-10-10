@@ -22,8 +22,8 @@ public static class Global
         }
 
         float red = Mathf.Sqrt((color1.r * color1.r * weight1 + color2.r * color2.r * weight2) / (weight1 + weight2));
-        float green = Mathf.Sqrt((color1.g * color1.g *  weight1 + color2.g * color2.g * weight2) / (weight1 + weight2));
-        float blue = Mathf.Sqrt((color1.b * color1.b *  weight1 + color2.b * color2.b * weight2) / (weight1 + weight2));
+        float green = Mathf.Sqrt((color1.g * color1.g * weight1 + color2.g * color2.g * weight2) / (weight1 + weight2));
+        float blue = Mathf.Sqrt((color1.b * color1.b * weight1 + color2.b * color2.b * weight2) / (weight1 + weight2));
 
         // Deal with floating point shenanigans again
         if (red > 1) red = 1;
