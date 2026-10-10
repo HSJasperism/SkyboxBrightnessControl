@@ -6,13 +6,13 @@ namespace SkyboxBrightnessControl;
 
 public class Bodies
 {
-    public List<Body> members { get; protected set; }
-    public List<Body> stars { get; protected set; }
+    public List<Body> members { get; }
+    public List<Body> stars { get; }
 
     public Body closestStar => stars[0];
 
-    public Camera primaryCamera { get; protected set; }
-    public Camera secondaryCamera { get; protected set; }
+    public Camera primaryCamera { get; }
+    public Camera secondaryCamera { get; }
 
     public Bodies(List<CelestialBody> inputCelestialBodies, Camera inputPrimaryCamera, Camera inputSecondaryCamera)
     {
@@ -41,7 +41,7 @@ public class Body
 {
     public const float over180 = 1 / 180f;
 
-    public Bodies Parent { get; protected set; }
+    public Bodies Parent { get; }
     public CelestialBody celestialBody { get; }
 
     public float effectiveRadius { get; }
