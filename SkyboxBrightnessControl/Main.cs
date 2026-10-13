@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -40,35 +41,45 @@ public class SkyboxBrightnessControl : MonoBehaviour
 
     protected void Start()
     {
-        Sky = GalaxyCubeControl.Instance;
-        primaryCamera = FlightCamera.fetch.mainCamera;
-        secondaryCamera = Camera.allCameras.FirstOrDefault(c => c.name == "Camera ScaledSpace");
+        try
+        {
+            Sky = GalaxyCubeControl.Instance;
+            primaryCamera = FlightCamera.fetch.mainCamera;
+            secondaryCamera = Camera.allCameras.FirstOrDefault(c => c.name == "Camera ScaledSpace");
 
-        // Disable stock sun fading
-        Sky.glareFadeLimit = 0f;
-        Sky.glareFadeLerpRate = 1f;
+            // Disable stock sun fading
+            Sky.glareFadeLimit = 0f;
+            Sky.glareFadeLerpRate = 1f;
 
-        // Allow full fading on vacuum bodies during the day
-        Sky.daytimeFadeLimit = 1f;
+            // Allow full fading on vacuum bodies during the day
+            Sky.daytimeFadeLimit = 1f;
 
-        // Let Scatterer handle sky color and fading
-        Sky.airPressureFade = 0f;
-        Sky.atmosFadeLimit = 0f;
+            // Let Scatterer handle sky color and fading
+            Sky.airPressureFade = 0f;
+            Sky.atmosFadeLimit = 0f;
 
-        Sky.minGalaxyColor = Color.black;
-        Sky.maxGalaxyColor = Color.white;
-        targetColor = Color.white;
+            Sky.minGalaxyColor = Color.black;
+            Sky.maxGalaxyColor = Color.white;
+            targetColor = Color.white;
+        }
+        catch (Exception e)
+        {
+            Logging.Error($"Failed to initialize skybox brightness control with the following error:\n{e.Message}");
+            enabled = false;
+            return;
+        }
 
         allBodies = new BodyContainer(FlightGlobals.Bodies, primaryCamera, secondaryCamera);
 
         Logging.Info($"Successfuly started.");
+        Logging.printActiveCameras();
     }
 
     protected void OnDestroy()
     {
         if (Instance == this) Instance = null;
 
-        if (SkywashCalculations == null) return;
+        if (SkywashCalculations is null) return;
         switch (SkywashCalculations.Status)
         {
             case TaskStatus.Running:
@@ -84,13 +95,18 @@ public class SkyboxBrightnessControl : MonoBehaviour
                 SkywashCalculations.Dispose();
                 break;
             }
+            default:
+            {
+                Logging.Warning($"Could not dispose of calculations. Status: {SkywashCalculations.Status}");
+                break;
+            }
         }
     }
 
     protected void FixedUpdate()
     {
         // Check if Task exists
-        if (SkywashCalculations == null)
+        if (SkywashCalculations is null)
         {
             SkywashCalculations = Task.Run(allBodies.updateAllStats);
             return;
