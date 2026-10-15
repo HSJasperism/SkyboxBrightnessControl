@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -44,6 +45,7 @@ public class BodyContainer
 
     public Camera primaryCamera { get; }
     public Camera secondaryCamera { get; }
+
     public void ActiveCamera(out Vector3 position, out Vector3 forward, out float fov)
     {
         switch (HighLogic.LoadedScene)
@@ -63,6 +65,7 @@ public class BodyContainer
                     forward = primaryCamera.transform.forward;
                     fov = primaryCamera.fieldOfView * primaryCamera.aspect * 0.5f;
                 }
+
                 break;
             }
             case GameScenes.TRACKSTATION:
@@ -119,6 +122,7 @@ public class BodyContainer
                 body.resetOcclusionFlag();
                 continue;
             }
+
             maxSkywash = Mathf.Max(maxSkywash, body.skywash);
         }
     }
@@ -190,42 +194,44 @@ public class Body
         float theta = Mathf.Acos(effectiveRadius / distanceToViewer);
         if (float.IsNaN(theta)) theta = float.NegativeInfinity;
         float maxPhaseAngle = theta * Mathf.Rad2Deg + 90 - angularRadiusToStar;
+        float phi = Mathf.Acos(effectiveRadius / distanceToViewer);
+        if (float.IsNaN(phi)) phi = float.NegativeInfinity;
+        float minPhaseAngle = (90 - angularRadiusToStar) - phi * Mathf.Rad2Deg;
 
-        // If vector projection is lower than radius, object occludes star
+        // Phase Angle & Occlusion
         if (phaseAngleStar >= maxPhaseAngle)
         {
             skywash = 0;
             closestStar.setOcclusionFlag();
         }
-        else if (angleToViewer - angularRadiusToViewer * Mathf.SmoothStep(1f, -1f, phaseAngleStar / maxPhaseAngle)
-                 > modifiedFOV) // Needs work, ignores camera forward transform
+        else if (phaseAngleStar <= minPhaseAngle)
         {
-            skywash = 0;
+            skywash = 100;
         }
         else
         {
-            skywash = 100;
-
-            // Decrease intensity with decreasing angular radius (no clamp)
-            skywash *= Mathf.Pow(angularRadiusToViewer, 2) / Mathf.Pow(closestStar.angularRadiusToViewer, 2);
-
-            // Phase angle calculations
-            if (phaseAngleStar < maxPhaseAngle && phaseAngleStar >= 180f - maxPhaseAngle && !Mathf.Approximately(maxPhaseAngle, 90f))
-                skywash *= Mathf.SmoothStep(0f, 1f, (phaseAngleStar - 180f + maxPhaseAngle) / (2f * maxPhaseAngle - 180f));
-
-            // TO DO - proper FOV calcs
-            if (angleToViewer - angularRadiusToViewer * Mathf.SmoothStep(1f, -1f, phaseAngleStar / maxPhaseAngle)
-                >= modifiedFOV * 0.8f) // Needs work, ignores camera forward transform
-                skywash *= Mathf.SmoothStep(
-                    1f, 0f,
-                    angleToViewer - angularRadiusToViewer *
-                    Mathf.SmoothStep(1f, -1f, phaseAngleStar / maxPhaseAngle * 0.8f) / (modifiedFOV * 0.2f));
+            skywash = Mathf.SmoothStep(100f, 0f, (phaseAngleStar - minPhaseAngle) / (maxPhaseAngle - minPhaseAngle));
         }
+
+        // Decrease intensity with decreasing angular radius (uncapped)
+        skywash *= Mathf.Pow(angularRadiusToViewer, 2) / Mathf.Pow(closestStar.angularRadiusToViewer, 2);
+
+        float phaseAngleModifier = Mathf.SmoothStep(1f, -1f, (phaseAngleStar - minPhaseAngle) / (maxPhaseAngle - minPhaseAngle));
+        // FOV - Needs work, must not ignore camera forward transform
+        if (angleToViewer - angularRadiusToViewer * phaseAngleModifier > modifiedFOV)
+        {
+            skywash = 0;
+        }
+        else if (angleToViewer - angularRadiusToViewer * phaseAngleModifier >= modifiedFOV * 0.8f)
+        {
+            skywash *= Mathf.SmoothStep(1f, 0f, (angleToViewer - angularRadiusToViewer * phaseAngleModifier - modifiedFOV * 0.8f) / (modifiedFOV * 0.2f));
+        }
+
 
         // Parent body occlusion
         // foreach (var neighbor in planetarySystem)
         // {
-            // unimplemented
+        // unimplemented
         // }
     }
 
@@ -258,6 +264,7 @@ public class Body
                     }
                 }
             }
+
             return field;
         }
     }

@@ -79,6 +79,8 @@ public class SkyboxBrightnessControl : MonoBehaviour
             Sky.minGalaxyColor = Color.black;
             Sky.maxGalaxyColor = Color.white;
             targetColor = Color.white;
+
+            allBodies = new BodyContainer(FlightGlobals.Bodies, primaryCamera, secondaryCamera);
         }
         catch (Exception e)
         {
@@ -86,8 +88,6 @@ public class SkyboxBrightnessControl : MonoBehaviour
             enabled = false;
             return;
         }
-
-        allBodies = new BodyContainer(FlightGlobals.Bodies, primaryCamera, secondaryCamera);
 
         Logging.Info($"Successfuly started.");
         Logging.printActiveCameras();
