@@ -136,34 +136,27 @@ public class SkyboxBrightnessControl : MonoBehaviour
             case TaskStatus.RanToCompletion:
             {
                 targetColor = Global.getGray(allBodies.maxSkywash);
-
                 SkywashCalculations.Dispose();
                 SkywashCalculations = Task.Run(allBodies.updateAllStats);
-
-                Logging.Verbose($"Successfully calculated weights for {allBodies.bodies.Count} bodies");
                 break;
             }
             case TaskStatus.Running:
             {
-                Logging.Verbose(
-                    "Still waiting for calculations"); // May be an indication of low system resources if this occurs too much
                 break;
             }
             case TaskStatus.Faulted:
             {
-                if (calculationRetries <= 30)
+                if (calculationRetries > 30)
                 {
-                    calculationRetries++;
-                    Logging.Error($"Calculation faulted. Retrying...\n{SkywashCalculations.Exception}");
-                    SkywashCalculations.Dispose();
-                    SkywashCalculations = Task.Run(allBodies.updateAllStats);
-                }
-                else
-                {
-                    Logging.Error("Exceeded maximum retries for calculation");
+                    Logging.Error($"Exceeded maximum calcullation retries with error:\n{SkywashCalculations.Exception}");
+                    Sky.maxGalaxyColor = Color.white;
                     enabled = false;
+                    return;
                 }
-
+                calculationRetries++;
+                Logging.Error($"Calculation faulted. Retrying...\n{SkywashCalculations.Exception}");
+                SkywashCalculations.Dispose();
+                SkywashCalculations = Task.Run(allBodies.updateAllStats);
                 break;
             }
             default:
