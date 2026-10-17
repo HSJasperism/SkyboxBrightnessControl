@@ -226,47 +226,6 @@ public class Body
         {
             skywash *= Mathf.SmoothStep(1f, 0f, (angleToViewer - angularRadiusToViewer * phaseAngleModifier - modifiedFOV * 0.8f) / (modifiedFOV * 0.2f));
         }
-
-
-        // Parent body occlusion
-        // foreach (var neighbor in planetarySystem)
-        // {
-        // unimplemented
-        // }
-    }
-
-    public List<Body> planetarySystem
-    {
-        get
-        {
-            if (field is null)
-            {
-                field = new List<Body>(5);
-                if (celestialBody.referenceBody && !celestialBody.referenceBody.isStar)
-                {
-                    field.Add(bodyContainer
-                              .bodies
-                              .First(t => t.celestialBody.name == celestialBody.referenceBody.name));
-                    field.AddRange(bodyContainer
-                                   .bodies
-                                   .Where(t => t.celestialBody.referenceBody.name == celestialBody.referenceBody.name
-                                               && t.celestialBody.name != celestialBody.name));
-                    if (field[0].celestialBody.referenceBody && !field[0].celestialBody.referenceBody.isStar)
-                    {
-                        field.Add(bodyContainer
-                                  .bodies
-                                  .First(t => t.celestialBody.name == field[0].celestialBody.referenceBody.name));
-                        field.AddRange(bodyContainer
-                                       .bodies
-                                       .Where(t => t.celestialBody.referenceBody.name ==
-                                                   field[0].celestialBody.referenceBody.name
-                                                   && t.celestialBody.name != field[0].celestialBody.name));
-                    }
-                }
-            }
-
-            return field;
-        }
     }
 
     public void setOcclusionFlag() => isOccluded = true;
