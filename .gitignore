@@ -7,7 +7,7 @@
 # Build Environment/Cache
 /*/obj
 
-// User specific files
+# User specific files
 *.user
 
 # Gradle and Maven with auto-import
