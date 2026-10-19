@@ -10,7 +10,7 @@ Takes over stock KSP's skybox visibility manipulation, using Tasks to minimize t
 * Simulates sky wash from bright celestial bodies in the foreground, not just stars
 * Includes occlusion in sky wash calculations, ensuring a visible skybox when no celestial body is visibly lit
 * Simulates sky wash from lit surface terrain
-* Similates eye adaptation when switching skybox visibility
+* Simulates eye adaptation in changing conditions
 * Disables stock atmospheric extinction in the night, allowing the sky box be visible and be affected by Scatterer and Volumetric Clouds V3
 * Scatterer will limit what will be visible depending on the atmospheric depth. The deeper you go, the brighter features need to be to show.
 * Clouds from Volumetric Clouds V3 will directly obscure the sky box.
