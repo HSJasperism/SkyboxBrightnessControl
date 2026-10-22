@@ -121,7 +121,7 @@ public class SkyboxBrightnessControl : MonoBehaviour
         }
     }
 
-    protected void FixedUpdate()
+    protected void Update()
     {
         // Check if Task exists
         if (SkywashCalculations is null)
