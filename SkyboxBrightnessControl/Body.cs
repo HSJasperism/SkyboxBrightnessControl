@@ -19,213 +19,214 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace SkyboxBrightnessControl;
-
-public class BodyContainer
+namespace SkyboxBrightnessControl
 {
-    public List<Body> bodies { get; }
-    public List<Body> stars { get; }
-    public bool starsSorted { get; protected set; }
-
-    public Body closestStar
+    public class BodyContainer
     {
-        get
+        public List<Body> bodies { get; }
+        public List<Body> stars { get; }
+        public bool starsSorted { get; protected set; }
+
+        public Body closestStar
         {
-            if (stars.Count > 1 && !starsSorted)
+            get
             {
-                stars.Sort((a, b) => a.distanceToViewer.CompareTo(b.distanceToViewer));
-                if (stars[0].distanceToViewer > 0) starsSorted = true;
+                if (stars.Count > 1 && !starsSorted)
+                {
+                    stars.Sort((a, b) => a.distanceToViewer.CompareTo(b.distanceToViewer));
+                    if (stars[0].distanceToViewer > 0) starsSorted = true;
+                }
+
+                return stars[0];
             }
-
-            return stars[0];
         }
-    }
 
-    public Camera primaryCamera { get; }
-    public Camera secondaryCamera { get; }
+        public Camera primaryCamera { get; }
+        public Camera secondaryCamera { get; }
 
-    public void ActiveCamera(out Vector3 position, out Vector3 forward, out float fov)
-    {
-        switch (HighLogic.LoadedScene)
+        public void ActiveCamera(out Vector3 position, out Vector3 forward, out float fov)
         {
-            case GameScenes.SPACECENTER:
-            case GameScenes.FLIGHT:
+            switch (HighLogic.LoadedScene)
             {
-                if (MapView.MapIsEnabled)
+                case GameScenes.SPACECENTER:
+                case GameScenes.FLIGHT:
+                {
+                    if (MapView.MapIsEnabled)
+                    {
+                        position = ScaledSpace.ScaledToLocalSpace(secondaryCamera.transform.position);
+                        forward = secondaryCamera.transform.forward;
+                        fov = secondaryCamera.fieldOfView * secondaryCamera.aspect * 0.5f;
+                    }
+                    else
+                    {
+                        position = primaryCamera.transform.position;
+                        forward = primaryCamera.transform.forward;
+                        fov = primaryCamera.fieldOfView * primaryCamera.aspect * 0.5f;
+                    }
+
+                    break;
+                }
+                case GameScenes.TRACKSTATION:
                 {
                     position = ScaledSpace.ScaledToLocalSpace(secondaryCamera.transform.position);
                     forward = secondaryCamera.transform.forward;
                     fov = secondaryCamera.fieldOfView * secondaryCamera.aspect * 0.5f;
+                    break;
                 }
-                else
+                default:
                 {
                     position = primaryCamera.transform.position;
                     forward = primaryCamera.transform.forward;
                     fov = primaryCamera.fieldOfView * primaryCamera.aspect * 0.5f;
+                    break;
+                }
+            }
+        }
+
+        public float maxSkywash { get; protected set; }
+
+        public BodyContainer(List<CelestialBody> inputCelestialBodies,
+                             Camera inputPrimaryCamera,
+                             Camera inputSecondaryCamera)
+        {
+            bodies = new List<Body>(inputCelestialBodies.Count);
+            stars = new List<Body>();
+            foreach (var celestialBody in inputCelestialBodies)
+            {
+                var body = new Body(this, celestialBody);
+                bodies.Add(body);
+                if (celestialBody.isStar) stars.Add(body);
+            }
+
+            primaryCamera = inputPrimaryCamera;
+            secondaryCamera = inputSecondaryCamera;
+
+            Logging.Info(
+                $"Bodies initialized with {bodies.Count} members, {stars.Count} stars, primary {primaryCamera.name}, & secondary {secondaryCamera.name}.");
+        }
+
+        public void updateAllStats()
+        {
+            ActiveCamera(out var cameraPosition, out var cameraForward, out float cameraFOV);
+
+            foreach (var body in bodies) body.updateStats(cameraPosition, cameraForward);
+            foreach (var body in bodies) body.updateOcclusion(cameraPosition, cameraForward, cameraFOV);
+
+            maxSkywash = 0;
+            foreach (var body in bodies)
+            {
+                if (body.isOccluded)
+                {
+                    body.resetOcclusionFlag();
+                    continue;
                 }
 
-                break;
-            }
-            case GameScenes.TRACKSTATION:
-            {
-                position = ScaledSpace.ScaledToLocalSpace(secondaryCamera.transform.position);
-                forward = secondaryCamera.transform.forward;
-                fov = secondaryCamera.fieldOfView * secondaryCamera.aspect * 0.5f;
-                break;
-            }
-            default:
-            {
-                position = primaryCamera.transform.position;
-                forward = primaryCamera.transform.forward;
-                fov = primaryCamera.fieldOfView * primaryCamera.aspect * 0.5f;
-                break;
+                maxSkywash = Mathf.Max(maxSkywash, body.skywash);
             }
         }
     }
 
-    public float maxSkywash { get; protected set; }
-
-    public BodyContainer(List<CelestialBody> inputCelestialBodies,
-                         Camera inputPrimaryCamera,
-                         Camera inputSecondaryCamera)
+    public class Body
     {
-        bodies = new List<Body>(inputCelestialBodies.Count);
-        stars = [];
-        foreach (var celestialBody in inputCelestialBodies)
+        public BodyContainer bodyContainer { get; }
+        public CelestialBody celestialBody { get; }
+
+        public float effectiveRadius { get; }
+        public Body closestStar => bodyContainer.closestStar;
+        public bool isOccluded { get; protected set; }
+
+        public float skywash { get; protected set; }
+        public float distanceToViewer { get; protected set; }
+        public float angleToViewer { get; protected set; }
+        public float angularRadiusToViewer { get; protected set; }
+        public float phaseAngleStar { get; protected set; }
+        public float angularRadiusToStar { get; protected set; }
+
+        public Body(BodyContainer bodyContainer, CelestialBody inputBody)
         {
-            var body = new Body(this, celestialBody);
-            bodies.Add(body);
-            if (celestialBody.isStar) stars.Add(body);
+            this.bodyContainer = bodyContainer;
+            celestialBody = inputBody;
+            effectiveRadius = (float)celestialBody.Radius;
+            // effectiveRadius += (celestialBody.atmosphere ? (float)celestialBody.atmosphereDepth : 0);
         }
 
-        primaryCamera = inputPrimaryCamera;
-        secondaryCamera = inputSecondaryCamera;
-
-        Logging.Info(
-            $"Bodies initialized with {bodies.Count} members, {stars.Count} stars, primary {primaryCamera.name}, & secondary {secondaryCamera.name}.");
-    }
-
-    public void updateAllStats()
-    {
-        ActiveCamera(out var cameraPosition, out var cameraForward, out float cameraFOV);
-
-        foreach (var body in bodies) body.updateStats(cameraPosition, cameraForward);
-        foreach (var body in bodies) body.updateOcclusion(cameraPosition, cameraForward, cameraFOV);
-
-        maxSkywash = 0;
-        foreach (var body in bodies)
+        public void updateStats(Vector3 inputCameraPosition, Vector3 inputCameraForward)
         {
-            if (body.isOccluded)
+            var relativePositionBody = (Vector3)celestialBody.position - inputCameraPosition;
+
+            distanceToViewer = relativePositionBody.magnitude;
+            angularRadiusToViewer = Mathf.Asin(effectiveRadius / distanceToViewer) * Mathf.Rad2Deg;
+            angleToViewer = Vector3.Angle(relativePositionBody, inputCameraForward);
+
+            // Sanity check, arc sin returns NaN if viewer is on or below the surface
+            if (float.IsNaN(angularRadiusToViewer)) angularRadiusToViewer = float.PositiveInfinity;
+        }
+
+        public void updateOcclusion(Vector3 inputCameraPosition, Vector3 inputCameraForward, float modifiedFOV)
+        {
+            if (celestialBody.isStar)
             {
-                body.resetOcclusionFlag();
-                continue;
+                // Out of view or occluded
+                if (angleToViewer - angularRadiusToViewer > modifiedFOV || isOccluded) skywash = 0;
+                else
+                {
+                    skywash = 100;
+
+                    // Decrease intensity as star moves out of FOV
+                    if (angleToViewer - angularRadiusToViewer >= modifiedFOV * 0.8f)
+                        skywash *= Mathf.SmoothStep(
+                            1f, 0f, (angleToViewer - angularRadiusToViewer - modifiedFOV * 0.8f) / (modifiedFOV * 0.2f));
+                }
+
+                // Ignore the rest of the method
+                return;
             }
 
-            maxSkywash = Mathf.Max(maxSkywash, body.skywash);
-        }
-    }
-}
+            // Check if the planet or moon is occluding the closest star
+            var StarToBody = (Vector3)closestStar.celestialBody.position - (Vector3)celestialBody.position;
+            var ViewerToBody = inputCameraPosition - (Vector3)celestialBody.position;
 
-public class Body
-{
-    public BodyContainer bodyContainer { get; }
-    public CelestialBody celestialBody { get; }
+            phaseAngleStar = Vector3.Angle(StarToBody, ViewerToBody);
+            angularRadiusToStar = Mathf.Asin(effectiveRadius / StarToBody.magnitude) * Mathf.Rad2Deg;
 
-    public float effectiveRadius { get; }
-    public Body closestStar => bodyContainer.closestStar;
-    public bool isOccluded { get; protected set; }
+            float theta = Mathf.Acos(effectiveRadius / distanceToViewer);
+            if (float.IsNaN(theta)) theta = float.NegativeInfinity;
+            float maxPhaseAngle = theta * Mathf.Rad2Deg + 90 - angularRadiusToStar;
+            float phi = Mathf.Acos(effectiveRadius / distanceToViewer);
+            if (float.IsNaN(phi)) phi = float.NegativeInfinity;
+            float minPhaseAngle = (90 - angularRadiusToStar) - phi * Mathf.Rad2Deg;
 
-    public float skywash { get; protected set; }
-    public float distanceToViewer { get; protected set; }
-    public float angleToViewer { get; protected set; }
-    public float angularRadiusToViewer { get; protected set; }
-    public float phaseAngleStar { get; protected set; }
-    public float angularRadiusToStar { get; protected set; }
-
-    public Body(BodyContainer bodyContainer, CelestialBody inputBody)
-    {
-        this.bodyContainer = bodyContainer;
-        celestialBody = inputBody;
-        effectiveRadius = (float)celestialBody.Radius;
-        // effectiveRadius += (celestialBody.atmosphere ? (float)celestialBody.atmosphereDepth : 0);
-    }
-
-    public void updateStats(Vector3 inputCameraPosition, Vector3 inputCameraForward)
-    {
-        var relativePositionBody = (Vector3)celestialBody.position - inputCameraPosition;
-
-        distanceToViewer = relativePositionBody.magnitude;
-        angularRadiusToViewer = Mathf.Asin(effectiveRadius / distanceToViewer) * Mathf.Rad2Deg;
-        angleToViewer = Vector3.Angle(relativePositionBody, inputCameraForward);
-
-        // Sanity check, arc sin returns NaN if viewer is on or below the surface
-        if (float.IsNaN(angularRadiusToViewer)) angularRadiusToViewer = float.PositiveInfinity;
-    }
-
-    public void updateOcclusion(Vector3 inputCameraPosition, Vector3 inputCameraForward, float modifiedFOV)
-    {
-        if (celestialBody.isStar)
-        {
-            // Out of view or occluded
-            if (angleToViewer - angularRadiusToViewer > modifiedFOV || isOccluded) skywash = 0;
-            else
+            // Phase Angle & Occlusion
+            if (phaseAngleStar >= maxPhaseAngle)
+            {
+                skywash = 0;
+                closestStar.setOcclusionFlag();
+            }
+            else if (phaseAngleStar <= minPhaseAngle)
             {
                 skywash = 100;
-
-                // Decrease intensity as star moves out of FOV
-                if (angleToViewer - angularRadiusToViewer >= modifiedFOV * 0.8f)
-                    skywash *= Mathf.SmoothStep(
-                        1f, 0f, (angleToViewer - angularRadiusToViewer - modifiedFOV * 0.8f) / (modifiedFOV * 0.2f));
+            }
+            else
+            {
+                skywash = Mathf.SmoothStep(100f, 0f, (phaseAngleStar - minPhaseAngle) / (maxPhaseAngle - minPhaseAngle));
             }
 
-            // Ignore the rest of the method
-            return;
+            // Decrease intensity with decreasing angular radius (uncapped)
+            skywash *= Mathf.Pow(angularRadiusToViewer, 2) / Mathf.Pow(closestStar.angularRadiusToViewer, 2);
+
+            float phaseAngleModifier = Mathf.SmoothStep(1f, -1f, (phaseAngleStar - minPhaseAngle) / (maxPhaseAngle - minPhaseAngle));
+            // FOV - Needs work, must not ignore camera forward transform
+            if (angleToViewer - angularRadiusToViewer * phaseAngleModifier > modifiedFOV)
+            {
+                skywash = 0;
+            }
+            else if (angleToViewer - angularRadiusToViewer * phaseAngleModifier >= modifiedFOV * 0.8f)
+            {
+                skywash *= Mathf.SmoothStep(1f, 0f, (angleToViewer - angularRadiusToViewer * phaseAngleModifier - modifiedFOV * 0.8f) / (modifiedFOV * 0.2f));
+            }
         }
 
-        // Check if the planet or moon is occluding the closest star
-        var StarToBody = (Vector3)closestStar.celestialBody.position - (Vector3)celestialBody.position;
-        var ViewerToBody = inputCameraPosition - (Vector3)celestialBody.position;
-
-        phaseAngleStar = Vector3.Angle(StarToBody, ViewerToBody);
-        angularRadiusToStar = Mathf.Asin(effectiveRadius / StarToBody.magnitude) * Mathf.Rad2Deg;
-
-        float theta = Mathf.Acos(effectiveRadius / distanceToViewer);
-        if (float.IsNaN(theta)) theta = float.NegativeInfinity;
-        float maxPhaseAngle = theta * Mathf.Rad2Deg + 90 - angularRadiusToStar;
-        float phi = Mathf.Acos(effectiveRadius / distanceToViewer);
-        if (float.IsNaN(phi)) phi = float.NegativeInfinity;
-        float minPhaseAngle = (90 - angularRadiusToStar) - phi * Mathf.Rad2Deg;
-
-        // Phase Angle & Occlusion
-        if (phaseAngleStar >= maxPhaseAngle)
-        {
-            skywash = 0;
-            closestStar.setOcclusionFlag();
-        }
-        else if (phaseAngleStar <= minPhaseAngle)
-        {
-            skywash = 100;
-        }
-        else
-        {
-            skywash = Mathf.SmoothStep(100f, 0f, (phaseAngleStar - minPhaseAngle) / (maxPhaseAngle - minPhaseAngle));
-        }
-
-        // Decrease intensity with decreasing angular radius (uncapped)
-        skywash *= Mathf.Pow(angularRadiusToViewer, 2) / Mathf.Pow(closestStar.angularRadiusToViewer, 2);
-
-        float phaseAngleModifier = Mathf.SmoothStep(1f, -1f, (phaseAngleStar - minPhaseAngle) / (maxPhaseAngle - minPhaseAngle));
-        // FOV - Needs work, must not ignore camera forward transform
-        if (angleToViewer - angularRadiusToViewer * phaseAngleModifier > modifiedFOV)
-        {
-            skywash = 0;
-        }
-        else if (angleToViewer - angularRadiusToViewer * phaseAngleModifier >= modifiedFOV * 0.8f)
-        {
-            skywash *= Mathf.SmoothStep(1f, 0f, (angleToViewer - angularRadiusToViewer * phaseAngleModifier - modifiedFOV * 0.8f) / (modifiedFOV * 0.2f));
-        }
+        public void setOcclusionFlag() => isOccluded = true;
+        public void resetOcclusionFlag() => isOccluded = false;
     }
-
-    public void setOcclusionFlag() => isOccluded = true;
-    public void resetOcclusionFlag() => isOccluded = false;
 }

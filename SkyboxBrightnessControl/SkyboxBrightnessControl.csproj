@@ -1,5 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
     <PropertyGroup>
         <OutputType>Library</OutputType>
         <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -26,7 +28,6 @@
         </DefineConstants>
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
-        <LangVersion>default</LangVersion>
         <Prefer32Bit>false</Prefer32Bit>
     </PropertyGroup>
 
@@ -38,7 +39,6 @@
         </DefineConstants>
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
-        <LangVersion>default</LangVersion>
         <Prefer32Bit>false</Prefer32Bit>
     </PropertyGroup>
 
@@ -69,5 +69,7 @@
             <Private>False</Private>
         </Reference>
     </ItemGroup>
+
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
 </Project>
